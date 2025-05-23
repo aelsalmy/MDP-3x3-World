@@ -1,7 +1,7 @@
 from mdp import *
 
-mdp = MarkovDP(100)
+mdp = MarkovDP(r=3)
 
-mdp.policy_iteration()
+mdp.value_iteration()
 
 mdp.print_value_func()

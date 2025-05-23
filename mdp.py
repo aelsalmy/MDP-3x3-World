@@ -166,6 +166,52 @@ class MarkovDP:
         
         print("Policy Iteration Done")
         print(self.policy)
+    
+    def value_iteration(self):
+        while True:
+            delta=0
+            new_values=copy.deepcopy(self.values)
+            for i in range(self.size):
+                for j in range(self.size):
+                    if i==0 and j==2:
+                        new_values[i][j]=self.rewards[i][j]
+                        continue
+                    max_value=-math.inf
+                    
+                    for a in self.get_possible_actions(i,j):
+                        action_value= self.get_action_value(i,j,a)
+                        max_value=max(action_value,max_value)
+                    delta=max(delta,abs(max_value-self.values[i][j]))
+                    new_values[i][j]=max_value
+            self.values=new_values
+            if delta<THRESHOLD:
+                break
+            
+            #extract greedy policy
+            # self.policy = []
+        for i in range(self.size):
+            for j in range(self.size):
+                if i == 0 and j == 2:  # Terminal
+                    self.policy.append([])
+                    continue
+
+                best_action = None
+                best_value = -math.inf
+
+                for a in self.get_general_possible_actions(i, j):
+                    val = self.get_action_value(i, j, a)
+                    if val > best_value:
+                        best_value = val
+                        best_action = a
+
+                self.policy.append([best_action])
+
+        print("Value Iteration Done")
+        print(self.policy)
+                
+    
+        
+        
 
     def print_value_func(self):
 
