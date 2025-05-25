@@ -12,7 +12,7 @@ for reward in r:
 
     mdp.print_value_func()
 
-    print("--------------------------------------")
+    print("\n\n--------------------------------------------------------\n")
     print(f"Optimal policy for r = {reward} applying Policy Iteration:\n")
 
     mdp2 = MarkovDP(r = reward)
@@ -21,4 +21,4 @@ for reward in r:
 
     mdp2.print_value_func()
 
-    print("--------------------------------------")
+    print("\n--------------------------------------------------------\n\n")
