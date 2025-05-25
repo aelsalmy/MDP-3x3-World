@@ -63,20 +63,22 @@ class MarkovDP:
         else:
             return self.values[i][j]
     
+    def get_reward(self , i , j):
+        if i >= self.size or i < 0 or j >= self.size or j < 0:
+            return 0
+        else:
+            return self.rewards[i][j]
+
     #get value acc to specific action g(s,a)
     def get_action_value(self , i , j , a):
-        temp = self.rewards[i][j]
-
-        ind = -1
+        temp = 0
 
         rot = self.get_action_rot(a)
 
         for probability , direction in zip(self.prob , rot):
 
             x , y = self.action_effect[direction]
-            temp += self.disc * probability * self.get_prev_value(i + x , j + y)
-
-            ind += 1
+            temp += probability * self.get_reward(i + x , j + y) + self.disc * probability * self.get_prev_value(i + x , j + y)
 
         return temp
 
@@ -92,36 +94,23 @@ class MarkovDP:
             for i in range(self.size):
                 for j in range(self.size):
 
-                    actions = self.get_possible_actions(i , j)
+                    actions = self.policy[i * self.size + j]
                     
                     if len(actions) != 0:
-                        prob_of_action = 1 / (len(actions))
+                        prob_of_action = 1
 
                     else:
-                        self.values[i][j] = self.rewards[i][j]
+                        self.values[i][j] = 0
                         continue
-
-                    new_value[i][j] = prob_of_action * sum(self.get_action_value(i , j , a) for a in actions)
+                    
+                    new_value[i][j] = self.get_action_value(i , j , actions[0])
 
                     change = max(change , abs(new_value[i][j] - self.values[i][j]))
 
             self.values = new_value
+
             if change < THRESHOLD:
                 break
-    
-    def generate_random_policy(self):
-        self.policy = []
-
-        for i in range(self.size):
-            for j in range(self.size):
-                if i == 0 and j == 2:  # terminal state
-                    self.policy.append([])
-                    continue
-
-                valid_actions = self.get_general_possible_actions(i , j)
-
-                chosen_action = random.choice(valid_actions)
-                self.policy.append([chosen_action])
 
     def policy_iteration(self):
 
@@ -136,7 +125,6 @@ class MarkovDP:
             policy_updated = False
 
             iterations += 1
-            print(f"iteration: {iterations}")
 
             self.policy_eval()
 
@@ -164,15 +152,86 @@ class MarkovDP:
                         self.policy[state] = [optimal_action]
                         policy_updated = True
         
-        print("Policy Iteration Done")
+        print(f"Policy Iteration Done in {iterations} iterations")
+        print(self.policy)
+
+    def generate_random_policy(self):
+        self.policy = []
+
+        for i in range(self.size):
+            for j in range(self.size):
+                if i == 0 and j == 2:  # terminal state
+                    self.policy.append([])
+                    continue
+
+                valid_actions = self.get_general_possible_actions(i , j)
+
+                chosen_action = random.choice(valid_actions)
+                
+                self.policy.append([chosen_action])
+
+    def value_iteration(self):
+        while True:
+            delta=0
+            new_values=copy.deepcopy(self.values)
+            for i in range(self.size):
+                for j in range(self.size):
+                    if i==0 and j==2:
+                        new_values[i][j]=self.rewards[i][j]
+                        continue
+                    max_value=-math.inf
+                    
+                    for a in self.get_possible_actions(i,j):
+                        action_value= self.get_action_value(i,j,a)
+                        max_value=max(action_value,max_value)
+                    delta=max(delta,abs(max_value-self.values[i][j]))
+                    new_values[i][j]=max_value
+            self.values=new_values
+            if delta<THRESHOLD:
+                break
+            
+            #extract greedy policy
+            # self.policy = []
+        for i in range(self.size):
+            for j in range(self.size):
+                if i == 0 and j == 2:  # Terminal
+                    self.policy.append([])
+                    continue
+
+                best_action = None
+                best_value = -math.inf
+
+                for a in self.get_general_possible_actions(i, j):
+                    val = self.get_action_value(i, j, a)
+                    if val > best_value:
+                        best_value = val
+                        best_action = a
+
+                self.policy.append([best_action])
+
+        print("Value Iteration Done")
         print(self.policy)
 
     def print_value_func(self):
+
+        directions = ["Left " , "  Up " , "Right" , "Down "]
 
         print("\nValue Function:")
         for row in self.values:
             print(" | ".join(f"{v:6.2f}" for v in row))
         print()                    
 
+        print("\nOptimal Policy:")
+
+
+        for i in range(self.size):
+            row = ""
+            for j in range(self.size):
+                actions = self.policy[i * self.size + j]
+                if len(actions) != 0:
+                    row = row + directions[actions[0] - 1] + " | "
+                else:
+                    row = row + "  X  " + " | "
+            print(row)
 
 
