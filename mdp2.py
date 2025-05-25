@@ -3,7 +3,7 @@ import copy
 import math
 import random
 
-class MarkovDP:
+class MarkovDP2:
     def __init__(self , r , disc = 0.99 , size = 3):
         self.size = size
         self.prob = [0.1 , 0.8 , 0.1]
@@ -19,7 +19,6 @@ class MarkovDP:
         }
         self.policy = [ self.actions.copy() for i in range(self.size * self.size) ]
         self.policy[2] = []     #Terminal node has no possible actions
-
 
     #function to get possible actions of a specific state
     def get_possible_actions(self , i , j):
@@ -58,11 +57,15 @@ class MarkovDP:
             self.actions[(idx + 1) % 4]
         ]
 
-    def get_prev_value(self , i , j):
-        if i >= self.size or i < 0 or j >= self.size or j < 0:
-            return 0
-        else:
-            return self.values[i][j]
+    def get_prev_value(self , i , j , action):
+        if action == UP:
+            return self.values[max(i - 1, 0)][j]
+        elif action == DOWN:
+            return self.values[min(i + 1, self.size - 1)][j]
+        elif action == RIGHT:
+            return self.values[i][min(j + 1, self.size - 1)]
+        elif action == LEFT:
+            return self.values[i][max(j - 1, 0)]
     
     def get_reward(self , i , j):
         if i >= self.size or i < 0 or j >= self.size or j < 0:
@@ -72,14 +75,13 @@ class MarkovDP:
 
     #get value acc to specific action g(s,a)
     def get_action_value(self , i , j , a):
-        temp = 0
+        temp = self.rewards[i][j]
 
         rot = self.get_action_rot(a)
 
         for probability , direction in zip(self.prob , rot):
 
-            x , y = self.action_effect[direction]
-            temp += probability * self.get_reward(i + x , j + y) + self.disc * probability * self.get_prev_value(i + x , j + y)
+            temp += self.disc * probability * self.get_prev_value(i , j , direction)
 
         return temp
 
@@ -97,11 +99,8 @@ class MarkovDP:
 
                     actions = self.policy[i * self.size + j]
                     
-                    if len(actions) != 0:
-                        prob_of_action = 1
-
-                    else:
-                        self.values[i][j] = 0
+                    if (i == 0 and j == 2) or (i == 0 and j == 0):
+                        new_value[i][j] = self.rewards[i][j]
                         continue
                     
                     new_value[i][j] = self.get_action_value(i , j , actions[0])
@@ -117,7 +116,7 @@ class MarkovDP:
 
         self.generate_random_policy()
 
-        #print(self.policy)
+        #print("Random Initial Policy : " + str(self.policy))
         
         policy_updated = True
         iterations = 0
@@ -132,7 +131,7 @@ class MarkovDP:
             for i in range(self.size):
                 for j in range(self.size):
 
-                    if i == 0 and j == 2:       #terminal state
+                    if (i == 0 and j == 2):       #terminal state
                         continue
 
                     state = i * self.size + j
@@ -173,38 +172,45 @@ class MarkovDP:
 
     def value_iteration(self):
 
+        iterations = 0
         while True:
+
             delta = 0
             new_values = copy.deepcopy(self.values)
-            
+
             for i in range(self.size):
                 for j in range(self.size):
-                    if i == 0 and j == 2:
-                        new_values[i][j] = 0
+
+                    if (i == 0 and j == 2) or (i == 0 and j == 0):
+                        new_values[i][j] = self.rewards[i][j]
                         continue
 
-                    max_value=-math.inf
+                    max_value = -math.inf
                     
                     for a in self.get_possible_actions(i,j):
+
                         action_value = self.get_action_value(i,j,a)
                         max_value = max(action_value,max_value)
-                    delta = max(delta,abs(max_value-self.values[i][j]))
+                    
+                    delta = max(delta , abs(max_value-self.values[i][j]))
                     new_values[i][j] = max_value
             
             self.values = new_values
-            
+            iterations += 1
+
             if delta < THRESHOLD:
                 break
             
-        #Obtain Optimal Policy
+        self.policy = []
         for i in range(self.size):
             for j in range(self.size):
+
                 if i == 0 and j == 2:  # Terminal
                     self.policy.append([])
                     continue
 
                 best_action = None
-                best_value = -math.inf
+                best_value = - math.inf
 
                 for a in self.get_general_possible_actions(i, j):
                     val = self.get_action_value(i, j, a)
@@ -214,7 +220,7 @@ class MarkovDP:
 
                 self.policy.append([best_action])
 
-        print("Value Iteration Done")
+        print(f"Value Iteration Done in {iterations} iterations")
         #print(self.policy)
 
     def print_value_func(self):

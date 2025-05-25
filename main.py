@@ -1,7 +1,9 @@
 from mdp import *
+from mdp2 import *
 
-r = [100 , 3 , 1 , 0 , -3]
-#r = [100 , 0]
+#r = [100 , 3 , 0 , -3]
+r = [100]
+
 
 for reward in r:
     print(f"Optimal policy for r = {reward} applying Value Iteration:\n")
